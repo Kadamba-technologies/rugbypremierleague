@@ -1,8 +1,26 @@
 /// <reference types="vite/client" />
 import { MatchPack, TeamStanding, Player, MatchRecord } from '../types';
 
-// import.meta.env.BASE_URL = '/rpl/' (set by vite base option), so this resolves to '/rpl/api/rugby'
-const BASE = `${import.meta.env.BASE_URL}api/rugby`;
+// When hosted on cricket-21.com the external API allows CORS directly from that origin,
+// so we call it from the browser. On any other host we route through the server-side proxy.
+const DIRECT_API = 'https://cloud.cricket-21.com/cricketapi/api/RugbyMatchCenter';
+const useDirect = typeof window !== 'undefined' && window.location.hostname.endsWith('cricket-21.com');
+
+function standingsUrl(compid: number) {
+  return useDirect
+    ? `${DIRECT_API}/Standings?compid=${compid}&type=json`
+    : `${import.meta.env.BASE_URL}api/rugby/standings/${compid}`;
+}
+function statsUrl(compid: number) {
+  return useDirect
+    ? `${DIRECT_API}/StatsListing?compid=${compid}&type=json`
+    : `${import.meta.env.BASE_URL}api/rugby/stats/${compid}`;
+}
+function matchUrl(matchId: string) {
+  return useDirect
+    ? `${DIRECT_API}/GFXApi?matchid=${matchId}&type=json`
+    : `${import.meta.env.BASE_URL}api/rugby/match/${matchId}`;
+}
 
 // ─── Raw API types ────────────────────────────────────────────────────────────
 
@@ -396,8 +414,8 @@ export async function buildLiveMatchPack(
   competition: string
 ): Promise<{ pack: MatchPack; players: Player[] }> {
   const [standingsRaw, statsRaw] = await Promise.all([
-    fetch(`${BASE}/standings/${compid}`).then(r => r.json()),
-    fetch(`${BASE}/stats/${compid}`).then(r => r.json()),
+    fetch(standingsUrl(compid)).then(r => r.json()),
+    fetch(statsUrl(compid)).then(r => r.json()),
   ]);
 
   const { standings, completedMatchIds } = parseStandings(standingsRaw);
@@ -405,7 +423,7 @@ export async function buildLiveMatchPack(
 
   const gfxList = await Promise.all(
     Array.from(completedMatchIds).map(id =>
-      fetch(`${BASE}/match/${id}`).then(r => r.json()).catch(() => null)
+      fetch(matchUrl(id)).then(r => r.json()).catch(() => null)
     )
   );
 
