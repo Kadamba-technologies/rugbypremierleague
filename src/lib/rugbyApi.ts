@@ -1,6 +1,8 @@
+/// <reference types="vite/client" />
 import { MatchPack, TeamStanding, Player, MatchRecord } from '../types';
 
-const BASE = '/api/rugby';
+// import.meta.env.BASE_URL = '/rpl/' (set by vite base option), so this resolves to '/rpl/api/rugby'
+const BASE = `${import.meta.env.BASE_URL}api/rugby`;
 
 // ─── Raw API types ────────────────────────────────────────────────────────────
 
